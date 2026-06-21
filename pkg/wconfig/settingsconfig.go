@@ -155,6 +155,7 @@ type SettingsType struct {
 	WindowNativeTitleBar                bool     `json:"window:nativetitlebar,omitempty"`
 	WindowDisableHardwareAcceleration   bool     `json:"window:disablehardwareacceleration,omitempty"`
 	WindowMaxTabCacheSize               int      `json:"window:maxtabcachesize,omitempty"`
+	WindowKeepWorkspacesResident        bool     `json:"window:keepworkspacesresident,omitempty"`
 	WindowMagnifiedBlockOpacity         *float64 `json:"window:magnifiedblockopacity,omitempty"`
 	WindowMagnifiedBlockSize            *float64 `json:"window:magnifiedblocksize,omitempty"`
 	WindowMagnifiedBlockBlurPrimaryPx   *int64   `json:"window:magnifiedblockblurprimarypx,omitempty"`

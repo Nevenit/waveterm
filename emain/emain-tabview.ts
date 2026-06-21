@@ -117,6 +117,7 @@ export function getWaveTabViewByWebContentsId(webContentsId: number): WaveTabVie
 
 export class WaveTabView extends WebContentsView {
     waveWindowId: string; // this will be set for any tabviews that are initialized. (unset for the hot spare)
+    waveWorkspaceId: string; // the workspace this view was last activated under
     isActiveTab: boolean;
     isWaveAIOpen: boolean;
     private _waveTabId: string; // always set, WaveTabViews are unique per tab
@@ -240,6 +241,17 @@ const wcvCache = new Map<string, WaveTabView>();
 export function setMaxTabCacheSize(size: number) {
     console.log("setMaxTabCacheSize", size);
     MaxCacheSize = size;
+}
+
+let KeepWorkspacesResident = false;
+
+export function setKeepWorkspacesResident(resident: boolean) {
+    console.log("setKeepWorkspacesResident", resident);
+    KeepWorkspacesResident = resident;
+}
+
+export function getKeepWorkspacesResident(): boolean {
+    return KeepWorkspacesResident;
 }
 
 export function getWaveTabView(waveTabId: string): WaveTabView | undefined {

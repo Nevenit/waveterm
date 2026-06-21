@@ -86,7 +86,7 @@ func (svc *WindowService) SwitchWorkspace_Meta() tsgenmeta.MethodMeta {
 	}
 }
 
-func (svc *WindowService) SwitchWorkspace(ctx context.Context, windowId string, workspaceId string) (*waveobj.Workspace, error) {
+func (svc *WindowService) SwitchWorkspace(ctx context.Context, windowId string, workspaceId string) (*wcore.SwitchWorkspaceResult, error) {
 	ctx = waveobj.ContextWithUpdates(ctx)
 	ws, err := wcore.SwitchWorkspace(ctx, windowId, workspaceId)
 

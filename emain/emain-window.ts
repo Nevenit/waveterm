@@ -18,7 +18,13 @@ import {
 } from "./emain-activity";
 import { log } from "./emain-log";
 import { getElectronAppBasePath, isDev, unamePlatform } from "./emain-platform";
-import { getOrCreateWebViewForTab, getWaveTabViewByWebContentsId, WaveTabView } from "./emain-tabview";
+import {
+    getKeepWorkspacesResident,
+    getOrCreateWebViewForTab,
+    getWaveTabViewByWebContentsId,
+    setKeepWorkspacesResident,
+    WaveTabView,
+} from "./emain-tabview";
 import { delay, ensureBoundsAreVisible, waveKeyToElectronKey } from "./emain-util";
 import { ElectronWshClient } from "./emain-wsh";
 import { updater } from "./updater";
@@ -486,6 +492,7 @@ export class WaveBrowserWindow extends BaseWindow {
             oldActiveView.isActiveTab = false;
         }
         this.activeTabView = tabView;
+        tabView.waveWorkspaceId = this.workspaceId;
         this.allLoadedTabViews.set(tabView.waveTabId, tabView);
         if (!tabInitialized) {
             console.log("initializing a new tab", primaryStartupTab ? "(primary startup)" : "");
@@ -601,16 +608,33 @@ export class WaveBrowserWindow extends BaseWindow {
                         break;
                     }
                     case "switchworkspace": {
-                        const newWs = await WindowService.SwitchWorkspace(this.waveWindowId, entry.workspaceId);
-                        if (!newWs) {
+                        if (entry.workspaceId == this.workspaceId) {
+                            break;
+                        }
+                        const res = await WindowService.SwitchWorkspace(this.waveWindowId, entry.workspaceId);
+                        if (!res?.workspace) {
                             return;
                         }
-                        console.log("processActionQueue switchworkspace newWs", newWs);
-                        this.removeAllChildViews();
-                        console.log("destroyed all tabs", this.waveWindowId);
+                        console.log("processActionQueue switchworkspace", res.workspace.oid);
+                        // when keepworkspacesresident is on and the outgoing workspace survived
+                        // the switch, keep its tabviews in allLoadedTabViews (parked off-screen
+                        // by finalizePositioning) instead of destroying them, so switching back
+                        // reattaches via wave-init with no rebuild. Do NOT null activeTabView:
+                        // setTabViewIntoWindow clears the old view's isActiveTab during the swap.
+                        const retain = getKeepWorkspacesResident() && !res.oldworkspacedeleted;
+                        if (!retain) {
+                            this.removeAllChildViews();
+                            this.allLoadedTabViews = new Map();
+                        } else {
+                            const validTabIds = new Set(res.workspace.tabids ?? []);
+                            for (const tv of [...this.allLoadedTabViews.values()]) {
+                                if (tv.waveWorkspaceId == res.workspace.oid && !validTabIds.has(tv.waveTabId)) {
+                                    this.removeTabView(tv.waveTabId, true);
+                                }
+                            }
+                        }
                         this.workspaceId = entry.workspaceId;
-                        this.allLoadedTabViews = new Map();
-                        tabId = newWs.activetabid;
+                        tabId = res.workspace.activetabid;
                         break;
                     }
                 }
@@ -1111,6 +1135,10 @@ export function initGlobalHotkeyEventSubscription() {
             try {
                 const hotkey = event?.data?.fullconfig?.settings?.["app:globalhotkey"];
                 registerGlobalHotkey(hotkey ?? null);
+                const keepResident = event?.data?.fullconfig?.settings?.["window:keepworkspacesresident"];
+                if (keepResident != null) {
+                    setKeepWorkspacesResident(keepResident);
+                }
             } catch (e) {
                 console.log("error handling config event for globalhotkey", e);
             }

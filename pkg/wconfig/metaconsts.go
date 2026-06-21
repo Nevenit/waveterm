@@ -104,6 +104,7 @@ const (
 	ConfigKey_WindowNativeTitleBar           = "window:nativetitlebar"
 	ConfigKey_WindowDisableHardwareAcceleration = "window:disablehardwareacceleration"
 	ConfigKey_WindowMaxTabCacheSize          = "window:maxtabcachesize"
+	ConfigKey_WindowKeepWorkspacesResident   = "window:keepworkspacesresident"
 	ConfigKey_WindowMagnifiedBlockOpacity    = "window:magnifiedblockopacity"
 	ConfigKey_WindowMagnifiedBlockSize       = "window:magnifiedblocksize"
 	ConfigKey_WindowMagnifiedBlockBlurPrimaryPx = "window:magnifiedblockblurprimarypx"

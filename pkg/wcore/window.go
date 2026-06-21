@@ -18,7 +18,12 @@ import (
 	"github.com/wavetermdev/waveterm/pkg/wstore"
 )
 
-func SwitchWorkspace(ctx context.Context, windowId string, workspaceId string) (*waveobj.Workspace, error) {
+type SwitchWorkspaceResult struct {
+	Workspace           *waveobj.Workspace `json:"workspace"`
+	OldWorkspaceDeleted bool               `json:"oldworkspacedeleted"`
+}
+
+func SwitchWorkspace(ctx context.Context, windowId string, workspaceId string) (*SwitchWorkspaceResult, error) {
 	log.Printf("SwitchWorkspace %s %s\n", windowId, workspaceId)
 	ws, err := GetWorkspace(ctx, workspaceId)
 	if err != nil {
@@ -66,7 +71,7 @@ func SwitchWorkspace(ctx context.Context, windowId string, workspaceId string) (
 	}
 
 	log.Printf("switching window %s to workspace %s\n", windowId, workspaceId)
-	return ws, nil
+	return &SwitchWorkspaceResult{Workspace: ws, OldWorkspaceDeleted: deleted}, nil
 }
 
 func GetWindow(ctx context.Context, windowId string) (*waveobj.Window, error) {

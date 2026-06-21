@@ -283,6 +283,9 @@
         "window:maxtabcachesize": {
           "type": "integer"
         },
+        "window:keepworkspacesresident": {
+          "type": "boolean"
+        },
         "window:magnifiedblockopacity": {
           "type": "number"
         },

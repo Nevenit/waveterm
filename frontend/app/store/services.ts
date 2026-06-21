@@ -148,7 +148,7 @@ export class WindowServiceType {
     SetWindowPosAndSize(windowId: string, pos: Point, size: WinSize): Promise<void> {
         return callBackendService(this?.waveEnv, "window", "SetWindowPosAndSize", Array.from(arguments))
     }
-    SwitchWorkspace(windowId: string, workspaceId: string): Promise<Workspace> {
+    SwitchWorkspace(windowId: string, workspaceId: string): Promise<SwitchWorkspaceResult> {
         return callBackendService(this?.waveEnv, "window", "SwitchWorkspace", Array.from(arguments))
     }
 }

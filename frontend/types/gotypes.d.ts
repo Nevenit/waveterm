@@ -1461,6 +1461,7 @@ declare global {
         "window:nativetitlebar"?: boolean;
         "window:disablehardwareacceleration"?: boolean;
         "window:maxtabcachesize"?: number;
+        "window:keepworkspacesresident"?: boolean;
         "window:magnifiedblockopacity"?: number;
         "window:magnifiedblocksize"?: number;
         "window:magnifiedblockblurprimarypx"?: number;
@@ -1540,6 +1541,12 @@ declare global {
         "url:url"?: string;
     };
 
+    // wcore.SwitchWorkspaceResult
+    type SwitchWorkspaceResult = {
+        workspace: Workspace;
+        oldworkspacedeleted: boolean;
+    };
+
     // telemetrydata.TEvent
     type TEvent = {
         uuid?: string;
@@ -1589,6 +1596,7 @@ declare global {
         "debug:panictype"?: string;
         "block:view"?: string;
         "block:controller"?: string;
+        "block:subblock"?: boolean;
         "ai:backendtype"?: string;
         "ai:local"?: boolean;
         "wsh:cmd"?: string;
