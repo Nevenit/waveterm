@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"sort"
 	"strconv"
 	"time"
 
@@ -397,11 +398,17 @@ func ListWorkspaces(ctx context.Context) (waveobj.WorkspaceList, error) {
 		workspaceToWindow[window.WorkspaceId] = window.OID
 	}
 
-	var wl waveobj.WorkspaceList
+	var savedWorkspaces []*waveobj.Workspace
 	for _, workspace := range workspaces {
 		if workspace.Name == "" || workspace.Icon == "" || workspace.Color == "" {
 			continue
 		}
+		savedWorkspaces = append(savedWorkspaces, workspace)
+	}
+	sortWorkspacesByDisplayOrder(savedWorkspaces)
+
+	var wl waveobj.WorkspaceList
+	for _, workspace := range savedWorkspaces {
 		windowId, ok := workspaceToWindow[workspace.OID]
 		if !ok {
 			windowId = ""
@@ -412,6 +419,72 @@ func ListWorkspaces(ctx context.Context) (waveobj.WorkspaceList, error) {
 		})
 	}
 	return wl, nil
+}
+
+func sortWorkspacesByDisplayOrder(workspaces []*waveobj.Workspace) {
+	sort.SliceStable(workspaces, func(i, j int) bool {
+		leftHasOrder := workspaces[i].Meta.HasKey(waveobj.MetaKey_DisplayOrder)
+		rightHasOrder := workspaces[j].Meta.HasKey(waveobj.MetaKey_DisplayOrder)
+		if leftHasOrder != rightHasOrder {
+			return leftHasOrder
+		}
+		if !leftHasOrder {
+			return false
+		}
+		leftOrder := workspaces[i].Meta.GetFloat(waveobj.MetaKey_DisplayOrder, 0)
+		rightOrder := workspaces[j].Meta.GetFloat(waveobj.MetaKey_DisplayOrder, 0)
+		return leftOrder < rightOrder
+	})
+}
+
+func SetWorkspaceOrder(ctx context.Context, workspaceIds []string) error {
+	workspaceList, err := ListWorkspaces(ctx)
+	if err != nil {
+		return fmt.Errorf("error listing workspaces: %w", err)
+	}
+
+	workspaces := make(map[string]*waveobj.Workspace, len(workspaceList))
+	for _, entry := range workspaceList {
+		workspace, err := GetWorkspace(ctx, entry.WorkspaceId)
+		if err != nil {
+			return fmt.Errorf("error getting workspace %q: %w", entry.WorkspaceId, err)
+		}
+		workspaces[entry.WorkspaceId] = workspace
+	}
+
+	orderedWorkspaces := make([]*waveobj.Workspace, 0, len(workspaces))
+	seen := make(map[string]bool, len(workspaces))
+	for _, workspaceId := range workspaceIds {
+		workspace, ok := workspaces[workspaceId]
+		if !ok {
+			return fmt.Errorf("workspace not found: %q", workspaceId)
+		}
+		if seen[workspaceId] {
+			return fmt.Errorf("workspace appears more than once: %q", workspaceId)
+		}
+		seen[workspaceId] = true
+		orderedWorkspaces = append(orderedWorkspaces, workspace)
+	}
+	// A workspace may have been saved after the caller loaded the list. Preserve
+	// those omitted workspaces at the end instead of dropping their order.
+	for _, entry := range workspaceList {
+		if !seen[entry.WorkspaceId] {
+			orderedWorkspaces = append(orderedWorkspaces, workspaces[entry.WorkspaceId])
+		}
+	}
+
+	return wstore.WithTx(ctx, func(tx *wstore.TxWrap) error {
+		for index, workspace := range orderedWorkspaces {
+			if workspace.Meta == nil {
+				workspace.Meta = make(waveobj.MetaMapType)
+			}
+			workspace.Meta[waveobj.MetaKey_DisplayOrder] = float64(index + 1)
+			if err := wstore.DBUpdate(tx.Context(), workspace); err != nil {
+				return fmt.Errorf("error updating workspace %q order: %w", workspace.OID, err)
+			}
+		}
+		return nil
+	})
 }
 
 func SetIcon(workspaceId string, icon string) error {

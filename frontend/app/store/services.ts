@@ -207,6 +207,11 @@ export class WorkspaceServiceType {
     }
 
     // @returns object updates
+    SetWorkspaceOrder(workspaceIds: string[]): Promise<void> {
+        return callBackendService(this?.waveEnv, "workspace", "SetWorkspaceOrder", Array.from(arguments))
+    }
+
+    // @returns object updates
     UpdateWorkspace(workspaceId: string, name: string, icon: string, color: string, applyDefaults: boolean): Promise<void> {
         return callBackendService(this?.waveEnv, "workspace", "UpdateWorkspace", Array.from(arguments))
     }

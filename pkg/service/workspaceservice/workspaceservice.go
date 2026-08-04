@@ -119,6 +119,32 @@ func (svc *WorkspaceService) ListWorkspaces() (waveobj.WorkspaceList, error) {
 	return wcore.ListWorkspaces(ctx)
 }
 
+func (svc *WorkspaceService) SetWorkspaceOrder_Meta() tsgenmeta.MethodMeta {
+	return tsgenmeta.MethodMeta{
+		ArgNames: []string{"ctx", "workspaceIds"},
+	}
+}
+
+func (svc *WorkspaceService) SetWorkspaceOrder(ctx context.Context, workspaceIds []string) (waveobj.UpdatesRtnType, error) {
+	ctx = waveobj.ContextWithUpdates(ctx)
+	if err := wcore.SetWorkspaceOrder(ctx, workspaceIds); err != nil {
+		return nil, fmt.Errorf("error setting workspace order: %w", err)
+	}
+
+	wps.Broker.Publish(wps.WaveEvent{
+		Event: wps.Event_WorkspaceUpdate,
+	})
+
+	updates := waveobj.ContextGetUpdatesRtn(ctx)
+	go func() {
+		defer func() {
+			panichandler.PanicHandler("WorkspaceService:SetWorkspaceOrder:SendUpdateEvents", recover())
+		}()
+		wps.Broker.SendUpdateEvents(updates)
+	}()
+	return updates, nil
+}
+
 func (svc *WorkspaceService) CreateTab_Meta() tsgenmeta.MethodMeta {
 	return tsgenmeta.MethodMeta{
 		ArgNames:   []string{"workspaceId", "tabName", "activateTab"},
